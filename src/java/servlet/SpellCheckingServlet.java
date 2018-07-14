@@ -8,9 +8,7 @@ package servlet;
 import daos.DAO;
 import daos.Metaphone;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -36,7 +34,7 @@ public class SpellCheckingServlet extends HttpServlet {
         response.setContentType("text/html;charset=UTF-8");
         try {
             String search = request.getParameter("txtSearch");
-            if (search.isEmpty()) {
+            if (search == null) {
                 request.setAttribute("ERROR", "Search value can't be null!");
             } else {
                 DAO dao = new DAO();
@@ -47,22 +45,31 @@ public class SpellCheckingServlet extends HttpServlet {
                     meta = mp.encode(search);
                     List<String> data = dao.getWordList(meta);
                     boolean flag = false;
-                    for (String string : data) {
-                        if (search.equals(string)) {
-                            flag = true;
-                            request.setAttribute("CORRECT", string);
-                        }
-                    }
-                    List<String> result = new ArrayList<>();
-                    if (!flag) {
+                    if (data != null) {
                         for (String string : data) {
-                            if (dao.editDistDP(search, string, search.length(), string.length()) == 1) {
-                                result.add(string);
+                            if (search.equals(string)) {
+                                flag = true;
+                                request.setAttribute("CORRECT", string);
+                                request.setAttribute("SEARCH", search);
                             }
                         }
-                        System.out.println(data.size());
-                        request.setAttribute("DATA", result);
-                        request.setAttribute("SEARCH", search);
+                        List<String> result = new ArrayList<>();
+                        if (!flag) {
+                            for (String string : data) {
+                                if (dao.editDistDP(search, string, search.length(), string.length()) == 1) {
+                                    result.add(string);
+                                }
+                            }
+                            if (!result.isEmpty()) {
+                                request.setAttribute("DATA", result);
+                                request.setAttribute("SEARCH", search);
+                            } else {
+                                request.setAttribute("ERROR", "Word can't check spelling!");
+
+                            }
+                        }
+                    } else {
+                        request.setAttribute("ERROR", "Word can't check spelling!");
                     }
                 } else {
                     request.setAttribute("ERROR", "Word wrong format!");
